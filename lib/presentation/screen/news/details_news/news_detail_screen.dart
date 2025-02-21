@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../../../../data/model/news/news_model.dart';
+import '../add_news/add_news_screen.dart';
 
 class NewsDetailScreen extends StatelessWidget {
   final NewsModel news;
@@ -10,22 +10,65 @@ class NewsDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(news.title)),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.network(news.imageUrl, fit: BoxFit.cover),
-            const SizedBox(height: 10),
-            Text(news.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 5),
-            Text("Kategori: ${news.category}", style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 5),
-            Text("Penulis: ${news.author}", style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 10),
-            Text(news.content),
-          ],
+      appBar: AppBar(
+        title: Text(news.title, maxLines: 1, overflow: TextOverflow.ellipsis),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => AddNewsScreen(news: news)),
+              );
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(news.imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: 200,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Center(
+                              child: Icon(Icons.broken_image,
+                                  size: 50, color: Colors.grey)),
+                        )),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                news.title,
+                style:
+                    const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Chip(label: Text(news.category)),
+                  Text(
+                    news.author,
+                    style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  ),
+                ],
+              ),
+              const Divider(height: 20),
+              Text(
+                news.content,
+                style: const TextStyle(fontSize: 16, height: 1.5),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -1,53 +1,72 @@
-import 'package:admin_fitmom/core/utils/my_strings.dart';
+import 'package:admin_fitmom/core/utils/dimensions.dart';
 import 'package:flutter/material.dart';
 import '../../../data/model/news/news_model.dart';
 import '../../../data/services/news/news_service.dart';
-import 'details_news/news_detail_screen.dart';
+import '../../../data/services/category_news/category_news_service.dart';
 import 'widget/floating_action_button_custom.dart';
+import 'widget/category_filter_widget.dart';
+import 'widget/news_card_widget.dart';
 
-class NewsListScreen extends StatelessWidget {
+class NewsListScreen extends StatefulWidget {
+  const NewsListScreen({super.key});
+
+  @override
+  _NewsListScreenState createState() => _NewsListScreenState();
+}
+
+class _NewsListScreenState extends State<NewsListScreen> {
   final NewsService _newsService = NewsService();
-
-  NewsListScreen({super.key});
+  final CategoryNewsService _categoryService = CategoryNewsService();
+  String? _selectedCategory;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text(MyStrings.beritaDanTips)),
-      body: StreamBuilder<List<NewsModel>>(
-        stream: _newsService.getNewsList(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: Padding(
+        padding: const EdgeInsets.only(top: Dimensions.space10),
+        child: Column(
+          children: [
+            CategoryFilterWidget(
+              categoryService: _categoryService,
+              onCategorySelected: (category) {
+                setState(() {
+                  _selectedCategory = category;
+                });
+              },
+            ),
+            Expanded(
+              child: StreamBuilder<List<NewsModel>>(
+                stream: _newsService.getNewsList(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text("Belum ada berita"));
-          }
+                  if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(child: Text("Belum ada berita"));
+                  }
 
-          final newsList = snapshot.data!;
+                  final newsList = snapshot.data!;
+                  final filteredNews = _selectedCategory == null
+                      ? newsList
+                      : newsList
+                          .where((news) => news.category == _selectedCategory)
+                          .toList();
 
-          return ListView.builder(
-            itemCount: newsList.length,
-            itemBuilder: (context, index) {
-              final news = newsList[index];
-              return ListTile(
-                leading: Image.network(news.imageUrl,
-                    width: 50, height: 50, fit: BoxFit.cover),
-                title: Text(news.title,
-                    maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(news.category),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => NewsDetailScreen(news: news)),
+                  return ListView.builder(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: filteredNews.length,
+                    itemBuilder: (context, index) {
+                      final news = filteredNews[index];
+                      return NewsCardWidget(news: news);
+                    },
                   );
                 },
-              );
-            },
-          );
-        },
+              ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: const FloatingActionButtonCustom(),
     );

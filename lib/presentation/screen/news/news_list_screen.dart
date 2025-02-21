@@ -59,7 +59,30 @@ class _NewsListScreenState extends State<NewsListScreen> {
                     itemCount: filteredNews.length,
                     itemBuilder: (context, index) {
                       final news = filteredNews[index];
-                      return NewsCardWidget(news: news);
+
+                      return Dismissible(
+                        key: Key(news.id),
+                        direction: DismissDirection.endToStart,
+                        background: Container(
+                          alignment: Alignment.centerRight,
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          color: Colors.red,
+                          child: const Icon(Icons.delete, color: Colors.white),
+                        ),
+                        confirmDismiss: (direction) async {
+                          return await _showDeleteConfirmationDialog(context);
+                        },
+                        onDismissed: (direction) async {
+                          await _newsService.deleteNews(news.id);
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content: Text(
+                                    "Berita '${news.title}' berhasil dihapus")),
+                          );
+                        },
+                        child: NewsCardWidget(news: news),
+                      );
                     },
                   );
                 },
@@ -71,4 +94,24 @@ class _NewsListScreenState extends State<NewsListScreen> {
       floatingActionButton: const FloatingActionButtonCustom(),
     );
   }
+}
+
+Future<bool?> _showDeleteConfirmationDialog(BuildContext context) async {
+  return showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text("Konfirmasi Hapus"),
+      content: const Text("Apakah Anda yakin ingin menghapus berita ini?"),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text("Batal"),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text("Hapus"),
+        ),
+      ],
+    ),
+  );
 }

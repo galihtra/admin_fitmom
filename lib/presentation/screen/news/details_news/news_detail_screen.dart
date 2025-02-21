@@ -1,6 +1,6 @@
+import 'package:admin_fitmom/presentation/screen/news/update_news/update_news_screen.dart';
 import 'package:flutter/material.dart';
 import '../../../../data/model/news/news_model.dart';
-import '../add_news/add_news_screen.dart';
 
 class NewsDetailScreen extends StatelessWidget {
   final NewsModel news;
@@ -19,7 +19,7 @@ class NewsDetailScreen extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (context) => AddNewsScreen(news: news)),
+                    builder: (context) => UpdateNewsScreen(news: news)),
               );
             },
           ),

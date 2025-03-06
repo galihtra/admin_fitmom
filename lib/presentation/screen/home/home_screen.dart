@@ -1,3 +1,4 @@
+import 'package:admin_fitmom/presentation/screen/course/course_list.dart';
 import 'package:admin_fitmom/presentation/screen/news/news_list_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -138,7 +139,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Expanded(
               child: TabBarView(
                 children: [
-                  const Center(child: Text("Home Content")),
+                  CourseListScreen(),
                   NewsListScreen(),
                   const Center(child: Text("Profile Content")),
                 ],

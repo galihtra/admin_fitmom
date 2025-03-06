@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../../../data/model/category/category_news_model.dart';
+import '../../../../../data/model/category_news/category_news_model.dart';
 import '../../../../../data/services/category_news/category_news_service.dart';
 
 class NewsCategoryDropdown extends StatefulWidget {

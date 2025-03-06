@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../../model/category/category_news_model.dart';
+import '../../model/category_news/category_news_model.dart';
 
 class CategoryNewsService {
   final CollectionReference _categoryCollection =

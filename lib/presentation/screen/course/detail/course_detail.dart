@@ -4,6 +4,7 @@ import '../../../../data/model/lesson/lesson.dart';
 import '../../../../data/services/course/course_service.dart';
 import '../../../../data/services/lesson/lesson_service.dart';
 import '../../lesson/add/add_lesson.dart';
+import '../../lesson/detail/lesson_detail_screen.dart';
 
 class CourseDetailScreen extends StatelessWidget {
   final Course course;
@@ -142,13 +143,13 @@ class CourseDetailScreen extends StatelessWidget {
                             : Icon(Icons.radio_button_unchecked,
                                 color: Colors.grey),
                         onTap: () {
-                          // Navigator.push(
-                          //   context,
-                          //   MaterialPageRoute(
-                          //     builder: (context) => LessonDetailScreen(
-                          //         lesson: lesson), // Navigasi ke detail lesson
-                          //   ),
-                          // );
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => LessonDetailScreen(
+                                  lesson: lesson), // Navigasi ke detail lesson
+                            ),
+                          );
                         },
                       ),
                     );

@@ -5,6 +5,7 @@ import '../../../../data/services/course/course_service.dart';
 import '../../../../data/services/lesson/lesson_service.dart';
 import '../../lesson/add/add_lesson.dart';
 import '../../lesson/detail/lesson_detail_screen.dart';
+import '../add_member/add_member_screen.dart';
 
 class CourseDetailScreen extends StatelessWidget {
   final Course course;
@@ -160,16 +161,46 @@ class CourseDetailScreen extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-                builder: (context) => AddLessonScreen(courseId: course.id)),
-          );
-        },
-        label: Text('Add Lesson'),
-        icon: Icon(Icons.add),
+      floatingActionButton: Stack(
+        children: [
+          Positioned(
+            bottom: 16.0,
+            right: 16.0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                FloatingActionButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddLessonScreen(courseId: course.id),
+                      ),
+                    );
+                  },
+                  heroTag: 'addLesson',
+                  child: Icon(Icons.add),
+                ),
+                SizedBox(height: 8),
+                FloatingActionButton(
+                  onPressed: () {
+                    // tambah member
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            AddMemberScreen(courseId: course.id),
+                      ),
+                    );
+                  },
+                  heroTag: 'otherAction',
+                  child: Icon(Icons.settings),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

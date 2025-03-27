@@ -1,4 +1,5 @@
 import 'package:admin_fitmom/presentation/screen/course/add/add_course.dart';
+import 'package:admin_fitmom/presentation/screen/course/widget/floating_button_course_custom.dart';
 import 'package:flutter/material.dart';
 import '../../../data/model/course/course.dart';
 import '../../../data/services/course/course_service.dart';
@@ -72,15 +73,7 @@ class CourseListScreen extends StatelessWidget {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddCourseScreen()),
-          );
-        },
-        child: Icon(Icons.add),
-      ),
+      floatingActionButton: const FloatingButtonSound()
     );
   }
 }

@@ -5,6 +5,7 @@ class Course {
   String image;
   bool isAvailable;
   bool isFinished;
+  List<String> members; // List user ID yang memiliki akses ke course
 
   Course({
     required this.id,
@@ -13,6 +14,7 @@ class Course {
     required this.image,
     required this.isAvailable,
     required this.isFinished,
+    required this.members,
   });
 
   factory Course.fromMap(Map<String, dynamic> map, String id) {
@@ -23,6 +25,7 @@ class Course {
       image: map['image'] ?? '',
       isAvailable: map['isAvailable'] ?? false,
       isFinished: map['isFinished'] ?? false,
+      members: List<String>.from(map['members'] ?? []), // Ambil daftar member dari Firestore
     );
   }
 
@@ -33,6 +36,7 @@ class Course {
       'image': image,
       'isAvailable': isAvailable,
       'isFinished': isFinished,
+      'members': members, // Simpan daftar member
     };
   }
 }

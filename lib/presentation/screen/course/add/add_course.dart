@@ -54,7 +54,8 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       description: _descriptionController.text,
       image: imageUrl ?? '',
       isAvailable: true,
-      isFinished: false,
+      isFinished: false, 
+      members: [],
     );
 
     await _courseService.addCourse(course);

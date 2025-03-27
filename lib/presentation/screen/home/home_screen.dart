@@ -8,6 +8,7 @@ import '../../../core/utils/my_color.dart';
 import '../../../core/utils/my_images.dart';
 import '../../../core/utils/my_strings.dart';
 import '../../../core/utils/style.dart';
+import '../testimonial/testimonial_screen.dart';
 import 'widget/cover_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -141,7 +142,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 children: [
                   CourseListScreen(),
                   NewsListScreen(),
-                  const Center(child: Text("Profile Content")),
+                  const TestimonialScreen(),
                 ],
               ),
             ),

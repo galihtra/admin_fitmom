@@ -9,6 +9,7 @@ class Lesson {
   String commentar;
   String ulasanPengguna;
   double rating;
+  int index;
 
   Lesson({
     required this.id,
@@ -21,6 +22,7 @@ class Lesson {
     required this.commentar,
     required this.ulasanPengguna,
     required this.rating,
+    required this.index,
   });
 
   factory Lesson.fromMap(Map<String, dynamic> map, String id) {
@@ -35,6 +37,7 @@ class Lesson {
       commentar: map['commentar'] ?? '',
       ulasanPengguna: map['ulasan_pengguna'] ?? '',
       rating: (map['rating'] ?? 0).toDouble(),
+      index: map['index'] ?? 0,
     );
   }
 
@@ -48,6 +51,7 @@ class Lesson {
       'is_completed': isCompleted,
       'commentar': commentar,
       'ulasan_pengguna': ulasanPengguna,
+      'index': index, 
       'rating': rating,
     };
   }

@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../../data/model/course/course.dart';
 import '../../../../data/model/lesson/lesson.dart';
 import '../../../../data/services/course/course_service.dart';
@@ -19,10 +20,9 @@ class CourseDetailScreen extends StatefulWidget {
 
 class _CourseDetailScreenState extends State<CourseDetailScreen> {
   final CourseService _courseService = CourseService();
-
   final LessonService _lessonService = LessonService();
-
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  List<Lesson> lessons = []; // Daftar lesson
 
   void _deleteCourse(BuildContext context) async {
     bool confirmDelete = await _showDeleteConfirmation(context);
@@ -40,7 +40,8 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
           context: context,
           builder: (context) => AlertDialog(
             title: Text('Delete Course'),
-            content: Text('Are you sure you want to delete ${widget.course.name}?'),
+            content:
+                Text('Are you sure you want to delete ${widget.course.name}?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -62,19 +63,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       appBar: AppBar(
         title: Text(widget.course.name),
         actions: [
+          IconButton(icon: Icon(Icons.edit), onPressed: () {}),
           IconButton(
-            icon: Icon(Icons.edit),
-            onPressed: () {
-              // Navigator.push(
-              //   context,
-              //   MaterialPageRoute(builder: (context) => EditCourseScreen(course: course)),
-              // );
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.delete, color: Colors.red),
-            onPressed: () => _deleteCourse(context),
-          ),
+              icon: Icon(Icons.delete, color: Colors.red), onPressed: () {}),
         ],
       ),
       body: SingleChildScrollView(
@@ -89,24 +80,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     height: 200,
                     color: Colors.grey[300],
                     child:
-                        Icon(Icons.image, size: 100, color: Colors.grey[600]),
-                  ),
+                        Icon(Icons.image, size: 100, color: Colors.grey[600])),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(widget.course.name,
-                      style:
-                          TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  Text(widget.course.description, style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 20),
-                  Text("Lessons",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ],
-              ),
+              child: Text("Lessons",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             StreamBuilder<List<Lesson>>(
               stream: _lessonService.getLessons(widget.course.id, userId),
@@ -116,14 +94,43 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 if (!snapshot.hasData)
                   return Center(child: CircularProgressIndicator());
 
-                final lessons = snapshot.data!;
-                return ListView.builder(
+                lessons = snapshot.data!;
+                lessons.sort(
+                    (a, b) => a.index.compareTo(b.index)); // Sort by index
+
+                return ReorderableListView(
                   shrinkWrap: true,
                   physics: NeverScrollableScrollPhysics(),
-                  itemCount: lessons.length,
-                  itemBuilder: (context, index) {
-                    final lesson = lessons[index];
+                  onReorder: (oldIndex, newIndex) async {
+                    setState(() {
+                      if (newIndex > oldIndex)
+                        newIndex -=
+                            1; // Adjust newIndex untuk menghindari pergeseran index
+                      final movedLesson = lessons.removeAt(oldIndex);
+                      lessons.insert(newIndex, movedLesson);
+                    });
+
+                    // Update semua index lesson di Firestore dengan batch update
+                    final batch = FirebaseFirestore.instance.batch();
+                    for (int i = 0; i < lessons.length; i++) {
+                      if (lessons[i].index != i) {
+                        // Update hanya jika index berubah
+                        lessons[i].index = i;
+                        final docRef = FirebaseFirestore.instance
+                            .collection('courses')
+                            .doc(widget.course.id)
+                            .collection('lessons')
+                            .doc(lessons[i].id);
+                        batch.update(docRef, {'index': i});
+                      }
+                    }
+                    await batch
+                        .commit(); // Simpan perubahan dengan batch update
+                  },
+                  children: lessons.map((lesson) {
                     return Card(
+                      key: ValueKey(
+                          lesson.id), // Key unik untuk mendukung drag-and-drop
                       margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
@@ -147,24 +154,24 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                               ),
                         title: Text(lesson.name,
                             style: TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(lesson.description,
-                            maxLines: 2, overflow: TextOverflow.ellipsis),
-                        trailing: lesson.isCompleted
-                            ? Icon(Icons.check_circle, color: Colors.green)
-                            : Icon(Icons.radio_button_unchecked,
-                                color: Colors.grey),
+                        subtitle: Text(
+                          lesson.description,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        trailing: Icon(Icons.drag_handle), // Ikon drag-and-drop
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => LessonDetailScreen(
-                                  lesson: lesson), // Navigasi ke detail lesson
+                              builder: (context) =>
+                                  LessonDetailScreen(lesson: lesson),
                             ),
                           );
                         },
                       ),
                     );
-                  },
+                  }).toList(),
                 );
               },
             ),
@@ -195,7 +202,6 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                 SizedBox(height: 8),
                 FloatingActionButton(
                   onPressed: () {
-                    // tambah member
                     Navigator.push(
                       context,
                       MaterialPageRoute(

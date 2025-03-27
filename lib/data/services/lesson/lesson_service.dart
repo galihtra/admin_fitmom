@@ -37,6 +37,25 @@ class LessonService {
     }
   }
 
+  Future<void> updateAllLessonIndexes(
+      String courseId, List<Lesson> lessons) async {
+    WriteBatch batch = _firestore.batch(); // Batch update agar efisien
+
+    for (int i = 0; i < lessons.length; i++) {
+      final lesson = lessons[i];
+      final docRef = _firestore
+          .collection('courses')
+          .doc(courseId)
+          .collection('lessons')
+          .doc(lesson.id);
+
+      batch.update(
+          docRef, {'index': i}); // Update index tiap lesson sesuai urutan
+    }
+
+    await batch.commit(); // Commit perubahan di batch
+  }
+
   /// Hapus lesson berdasarkan ID
   Future<void> deleteLesson(String courseId, String lessonId) async {
     try {
@@ -57,6 +76,7 @@ class LessonService {
         .collection('courses')
         .doc(courseId)
         .collection('lessons')
+        .orderBy('index') // Sort lesson berdasarkan index
         .snapshots()
         .asyncMap((snapshot) async {
       List<Lesson> lessons = [];
@@ -102,29 +122,26 @@ class LessonService {
   }
 
   /// Simpan rating & ulasan user
-Future<void> submitReview(String courseId, String lessonId, String userId,
-    double rating, String comment) async {
-  try {
-    await _firestore
-        .collection('courses')
-        .doc(courseId)
-        .collection('lessons')
-        .doc(lessonId)
-        .collection('lesson_reviews')
-        .doc(userId)
-        .set({
-      'userId': userId, // ✅ Simpan userId
-      'rating': rating,
-      'comment': comment,
-      'timestamp': FieldValue.serverTimestamp(),
-    }, SetOptions(merge: true));
+  Future<void> submitReview(String courseId, String lessonId, String userId,
+      double rating, String comment) async {
+    try {
+      await _firestore
+          .collection('courses')
+          .doc(courseId)
+          .collection('lessons')
+          .doc(lessonId)
+          .collection('lesson_reviews')
+          .doc(userId)
+          .set({
+        'userId': userId, // ✅ Simpan userId
+        'rating': rating,
+        'comment': comment,
+        'timestamp': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-    print("✅ Review berhasil disimpan untuk userId: $userId");
-  } catch (e) {
-    throw Exception("Failed to submit review: $e");
+      print("✅ Review berhasil disimpan untuk userId: $userId");
+    } catch (e) {
+      throw Exception("Failed to submit review: $e");
+    }
   }
-}
-
-
-  
 }

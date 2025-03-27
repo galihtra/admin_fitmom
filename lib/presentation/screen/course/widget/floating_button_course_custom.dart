@@ -29,13 +29,13 @@ class FloatingButtonSound extends StatelessWidget {
           },
         ),
         SpeedDialChild(
-          child: const Icon(Icons.audio_file),
+          child: const Icon(Icons.list_outlined),
           label: "Tambah Kelas",
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>  AddCourseScreen(),
+                builder: (context) => AddCourseScreen(),
               ),
             );
           },

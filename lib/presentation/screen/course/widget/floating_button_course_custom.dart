@@ -1,3 +1,4 @@
+import 'package:admin_fitmom/presentation/screen/reminder/reminder_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -36,6 +37,18 @@ class FloatingButtonSound extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => AddCourseScreen(),
+              ),
+            );
+          },
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.warning),
+          label: "Tambah Reminder",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ReminderScreen(),
               ),
             );
           },

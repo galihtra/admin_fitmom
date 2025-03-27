@@ -8,6 +8,8 @@ import '../../../core/utils/my_images.dart';
 import '../../../core/utils/style.dart';
 import '../../../data/services/auth/auth_service.dart';
 import '../auth/login/login_screen.dart';
+import 'widget/card_profile_widget.dart';
+import 'widget/delete_account_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -142,8 +144,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: const Center(
-        child: Text("Profile Screen", style: TextStyle(fontSize: 18)),
+      body: const SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  child: Column(
+                    children: [
+                      SizedBox(height: 20),
+                      CardProfileWidget(),
+                      SizedBox(height: 10),
+                      DeleteAccountWidget(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

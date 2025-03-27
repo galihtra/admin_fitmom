@@ -15,6 +15,19 @@ class TestimonialScreen extends StatefulWidget {
 class _TestimonialScreenState extends State<TestimonialScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  Future<void> _deleteTestimonial(String docId) async {
+    try {
+      await _firestore.collection('testimonials').doc(docId).delete();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Testimonial deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to delete testimonial: $e')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     double screenHeight = MediaQuery.of(context).size.height;
@@ -59,9 +72,7 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                     return SingleChildScrollView(
                       child: Column(
                         children: [
-                          const SizedBox(
-                            height: 20,
-                          ),
+                          const SizedBox(height: 20),
                           Card(
                             elevation: 5,
                             shape: RoundedRectangleBorder(
@@ -74,15 +85,25 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      LikeButton(docId: testimonial.id),
-                                      Text(
-                                        '${data['totalLikes'] ?? 0} orang menyukai',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.pinkAccent,
-                                        ),
+                                      Row(
+                                        children: [
+                                          LikeButton(docId: testimonial.id),
+                                          Text(
+                                            '${data['totalLikes'] ?? 0} orang menyukai',
+                                            style: const TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.pinkAccent,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      // Tombol Hapus Testimonial
+                                      IconButton(
+                                        icon: const Icon(Icons.delete, color: Colors.red),
+                                        onPressed: () => _deleteTestimonial(testimonial.id),
                                       ),
                                     ],
                                   ),
@@ -90,8 +111,7 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
 
                                   // Gambar Before & After
                                   Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
+                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                                     children: [
                                       Flexible(
                                         child: ImageFrame(
@@ -120,23 +140,19 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                                       color: Colors.pinkAccent,
                                     ),
                                   ),
-
                                   ConstrainedBox(
                                     constraints: BoxConstraints(
                                       maxHeight: screenHeight * 0.15,
-                                      maxWidth: screenWidth *
-                                          0.8, // Batasi lebar agar sama rata
+                                      maxWidth: screenWidth * 0.8, // Batasi lebar agar sama rata
                                     ),
                                     child: SingleChildScrollView(
                                       child: Text(
-                                        data['description'] ??
-                                            'Tidak ada deskripsi.',
+                                        data['description'] ?? 'Tidak ada deskripsi.',
                                         maxLines: 20,
                                         overflow: TextOverflow.ellipsis,
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
-                                            fontSize: 14,
-                                            color: Colors.black87),
+                                            fontSize: 14, color: Colors.black87),
                                       ),
                                     ),
                                   ),
@@ -159,8 +175,7 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-                builder: (context) => const AddTestimonialScreen()),
+            MaterialPageRoute(builder: (context) => const AddTestimonialScreen()),
           );
         },
         child: const Icon(Icons.add),

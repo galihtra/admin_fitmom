@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan
 import '../../../../data/model/lesson/lesson.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -12,12 +13,14 @@ class LessonDetailScreen extends StatefulWidget {
 }
 
 class _LessonDetailScreenState extends State<LessonDetailScreen> {
-  YoutubePlayerController? _youtubeController; // Gunakan nullable
+  YoutubePlayerController? _youtubeController; // Nullable
+  List<Map<String, dynamic>> _reviews = [];
 
   @override
   void initState() {
     super.initState();
     _initializeYoutubePlayer();
+    _fetchReviews(); // Fetch ulasan dari Firestore
   }
 
   void _initializeYoutubePlayer() {
@@ -33,14 +36,53 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
             forceHD: true,
           ),
         );
-        setState(() {}); // Refresh UI setelah inisialisasi
+        setState(() {});
       }
     }
   }
 
+  Future<void> _fetchReviews() async {
+  try {
+    QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
+        .collection('courses')
+        .doc(widget.lesson.idCourse)
+        .collection('lessons')
+        .doc(widget.lesson.id)
+        .collection('lesson_reviews')
+        .get();
+
+    List<Map<String, dynamic>> reviews = [];
+
+    for (var doc in reviewSnapshot.docs) {
+      var data = doc.data() as Map<String, dynamic>;
+      String userId = data['userId'] ?? "unknown_user";
+
+      // Fetch nama user berdasarkan userId
+      DocumentSnapshot userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      String userName = userDoc.exists ? userDoc['name'] ?? "Anonymous" : "Anonymous";
+
+      reviews.add({
+        'user': userName, // Nama user, bukan userId
+        'comment': data['comment'] ?? "No comment",
+      });
+    }
+
+    setState(() {
+      _reviews = reviews;
+    });
+  } catch (e) {
+    print("❌ Error fetching reviews or user data: $e");
+  }
+}
+
+
   @override
   void dispose() {
-    _youtubeController?.dispose(); // Gunakan nullable check
+    _youtubeController?.dispose(); // Cleanup
     super.dispose();
   }
 
@@ -52,7 +94,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Pastikan controller sudah siap sebelum ditampilkan
+            // Youtube Player atau Gambar Placeholder
             widget.lesson.urlVideo.isNotEmpty && _youtubeController != null
                 ? Container(
                     width: double.infinity,
@@ -84,34 +126,43 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                   Text(widget.lesson.name,
                       style:
                           TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Text(widget.lesson.description,
                       style: TextStyle(fontSize: 16)),
-                  SizedBox(height: 20),
-                  Text("User Comments",
+                  const SizedBox(height: 20),
+                  const Text("User Comments",
                       style:
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  widget.lesson.commentar.isNotEmpty
-                      ? Text(widget.lesson.commentar,
-                          style: TextStyle(
-                              fontSize: 14, fontStyle: FontStyle.italic))
-                      : Text("No comments yet",
-                          style: TextStyle(color: Colors.grey)),
-                  SizedBox(height: 20),
-                  Text("User Rating",
-                      style:
-                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  SizedBox(height: 5),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber),
-                      SizedBox(width: 5),
-                      Text(widget.lesson.rating > 0
-                          ? widget.lesson.rating.toString()
-                          : "No ratings yet"),
-                    ],
+                  const SizedBox(height: 10),
+
+                  // Ulasan ListView
+                  Container(
+                    height: 200, // Batas tinggi list agar tidak error
+                    child: ListView.builder(
+                      itemCount: _reviews.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 8.0),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _reviews[index]['user'],
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.pinkAccent,
+                                ),
+                              ),
+                              Text(_reviews[index]['comment']),
+                              const Divider(color: Colors.pinkAccent),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),

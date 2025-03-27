@@ -1,3 +1,5 @@
+import 'package:admin_fitmom/core/utils/my_color.dart';
+import 'package:admin_fitmom/presentation/screen/lesson/edit/edit_lesson_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,6 +10,7 @@ import '../../../../data/services/lesson/lesson_service.dart';
 import '../../lesson/add/add_lesson.dart';
 import '../../lesson/detail/lesson_detail_screen.dart';
 import '../add_member/add_member_screen.dart';
+import '../edit/edit_course_screen.dart';
 
 class CourseDetailScreen extends StatefulWidget {
   final Course course;
@@ -39,9 +42,9 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
     return await showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text('Delete Course'),
+            title: const Text('Hapus Kelas'),
             content:
-                Text('Are you sure you want to delete ${widget.course.name}?'),
+                Text('Kamu yakin ingin hapus kelas ${widget.course.name}?'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -49,12 +52,40 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.pop(context, true),
-                child: Text('Delete', style: TextStyle(color: Colors.red)),
+                child: Text('Hapus', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),
         ) ??
         false;
+  }
+
+  void _deleteLesson(BuildContext context, Lesson lesson) async {
+    bool confirmDelete = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Hapus Lesson'),
+            content: Text('Kamu yakin ingin hapus Latihan ${lesson.name}?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Hapus', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmDelete) {
+      await _lessonService.deleteLesson(widget.course.id, lesson.id);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lesson ${lesson.name} deleted successfully')),
+      );
+    }
   }
 
   @override
@@ -63,9 +94,21 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
       appBar: AppBar(
         title: Text(widget.course.name),
         actions: [
-          IconButton(icon: Icon(Icons.edit), onPressed: () {}),
           IconButton(
-              icon: Icon(Icons.delete, color: Colors.red), onPressed: () {}),
+            icon: Icon(Icons.edit),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => EditCourseScreen(course: widget.course),
+                ),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete, color: Colors.red),
+            onPressed: () => _deleteCourse(context), // Trigger delete course
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -83,7 +126,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         Icon(Icons.image, size: 100, color: Colors.grey[600])),
             Padding(
               padding: const EdgeInsets.all(16.0),
-              child: Text("Lessons",
+              child: Text("Latihan",
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             StreamBuilder<List<Lesson>>(
@@ -159,7 +202,27 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        trailing: Icon(Icons.drag_handle), // Ikon drag-and-drop
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () => _deleteLesson(context, lesson),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.edit, color: MyColor.secondaryColor),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        EditLessonScreen(lesson: lesson),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
+                        ), // Ikon drag-and-drop
                         onTap: () {
                           Navigator.push(
                             context,

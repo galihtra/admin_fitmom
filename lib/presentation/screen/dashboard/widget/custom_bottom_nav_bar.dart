@@ -37,7 +37,11 @@ class CustomBottomNavBar extends StatelessWidget {
           label: '',
         ),
         BottomNavigationBarItem(
-          icon: _buildNavIcon(MyImages.profileActive, MyImages.profile, 1),
+          icon: _buildNavIcon(MyImages.membersActive, MyImages.members, 1),
+          label: '',
+        ),
+        BottomNavigationBarItem(
+          icon: _buildNavIcon(MyImages.profileActive, MyImages.profile, 2),
           label: '',
         ),
       ],

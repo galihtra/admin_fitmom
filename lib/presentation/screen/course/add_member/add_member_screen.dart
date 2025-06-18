@@ -57,7 +57,11 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   void _filterUsers(String query) {
     final filtered = _allUsers.where((user) {
       final emailLower = user['email'].toLowerCase();
-      return emailLower.contains(query.toLowerCase());
+      final nameLower = user['name'].toLowerCase();
+      final searchLower = query.toLowerCase();
+
+      return emailLower.contains(searchLower) ||
+          nameLower.contains(searchLower);
     }).toList();
 
     setState(() {
@@ -66,12 +70,31 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   }
 
   void _addMembers() async {
-    for (String userId in _selectedUsers) {
-      await _courseService.addMemberToCourse(widget.courseId, userId);
+    final courseDoc =
+        FirebaseFirestore.instance.collection('courses').doc(widget.courseId);
+    final courseSnapshot = await courseDoc.get();
+
+    List<String> existingMembers = [];
+    if (courseSnapshot.exists && courseSnapshot.data()?['members'] != null) {
+      existingMembers = List<String>.from(courseSnapshot.data()!['members']);
     }
 
+    // Filter user yang belum jadi member
+    final newMembers = _selectedUsers.difference(existingMembers.toSet());
+
+    if (newMembers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Semua user yang dipilih sudah menjadi member')),
+      );
+      return;
+    }
+
+    final updatedMembers = [...existingMembers, ...newMembers];
+
+    await courseDoc.update({'members': updatedMembers});
+
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Members updated successfully')),
+      SnackBar(content: Text('Members berhasil ditambahkan')),
     );
 
     Navigator.pop(context);
@@ -80,7 +103,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add Members')),
+      appBar: AppBar(title: Text('Tambah Members')),
       body: Column(
         children: [
           Padding(
@@ -88,7 +111,7 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                labelText: 'Search by email',
+                labelText: 'Cari berdasarkan Email atau Nama',
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),

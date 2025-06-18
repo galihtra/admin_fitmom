@@ -1,3 +1,4 @@
+import 'package:admin_fitmom/presentation/screen/members/members_screen.dart';
 import 'package:flutter/material.dart';
 import '../home/home_screen.dart';
 import 'widget/custom_bottom_nav_bar.dart';
@@ -14,7 +15,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _pages = [
-    HomeScreen(),
+    const HomeScreen(),
+    const MembersScreen(),
     const ProfileScreen(),
   ];
 

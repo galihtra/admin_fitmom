@@ -13,6 +13,9 @@ class MyImages {
   static const String addNews = "assets/icon/add_news.svg";
   static const String addCategory = "assets/icon/add_category.svg";
 
+  static const String membersActive = "assets/icon/members_active.svg";
+  static const String members = "assets/icon/members.svg";
+
   //IMAGES
   static const String coverBg = "assets/images/cover_bg.png";
 

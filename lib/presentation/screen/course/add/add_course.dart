@@ -17,6 +17,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   final CourseService _courseService = CourseService();
   File? _imageFile;
   bool _isUploading = false;
+  bool _isFreeCourse = false; // Tambahkan variabel untuk status course gratis
 
   Future<void> _pickImage() async {
     final pickedFile =
@@ -54,8 +55,9 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       description: _descriptionController.text,
       image: imageUrl ?? '',
       isAvailable: true,
-      isFinished: false, 
-      members: [],
+      isFinished: false,
+      members:
+          _isFreeCourse ? [] : ['initialMember'], // Kosong untuk course gratis
     );
 
     await _courseService.addCourse(course);
@@ -70,7 +72,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Add Course')),
+      appBar: AppBar(title: Text('Tambah Kursus')),
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -80,38 +82,108 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
               children: [
                 TextFormField(
                   controller: _nameController,
-                  decoration: InputDecoration(labelText: 'Course Name'),
+                  decoration: InputDecoration(
+                    labelText: 'Nama Kursus',
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) =>
-                      value!.isEmpty ? 'Enter course name' : null,
+                      value!.isEmpty ? 'Masukkan nama kursus' : null,
                 ),
+                SizedBox(height: 16),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(labelText: 'Description'),
+                  decoration: InputDecoration(
+                    labelText: 'Deskripsi',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
                   validator: (value) =>
-                      value!.isEmpty ? 'Enter description' : null,
+                      value!.isEmpty ? 'Masukkan deskripsi' : null,
+                ),
+                SizedBox(height: 16),
+
+                // Switch untuk menentukan course gratis
+                Row(
+                  children: [
+                    Switch(
+                      value: _isFreeCourse,
+                      onChanged: (value) {
+                        setState(() {
+                          _isFreeCourse = value;
+                        });
+                      },
+                      activeColor: Colors.green,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      'Kursus Gratis',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                Text(
+                  _isFreeCourse
+                      ? 'Kursus ini akan tersedia untuk semua pengguna'
+                      : 'Kursus ini hanya untuk member tertentu',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 14,
+                  ),
                 ),
                 SizedBox(height: 20),
+
+                // Upload gambar
                 GestureDetector(
                   onTap: _pickImage,
-                  child: _imageFile == null
-                      ? Container(
-                          height: 150,
-                          width: double.infinity,
-                          color: Colors.grey[300],
-                          child: Icon(Icons.add_a_photo,
-                              size: 50, color: Colors.grey[700]),
-                        )
-                      : Image.file(_imageFile!,
-                          height: 150,
-                          width: double.infinity,
-                          fit: BoxFit.cover),
+                  child: Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: _imageFile == null
+                        ? Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.add_a_photo,
+                                  size: 50, color: Colors.grey[700]),
+                              SizedBox(height: 8),
+                              Text('Tambahkan Gambar',
+                                  style: TextStyle(color: Colors.grey[700])),
+                            ],
+                          )
+                        : ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.file(_imageFile!,
+                                height: 150,
+                                width: double.infinity,
+                                fit: BoxFit.cover),
+                          ),
+                  ),
                 ),
                 SizedBox(height: 20),
+
+                // Tombol simpan
                 _isUploading
                     ? CircularProgressIndicator()
-                    : ElevatedButton(
-                        onPressed: _saveCourse,
-                        child: Text('Save'),
+                    : SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          // style: ElevatedButton.styleFrom(
+                          //   primary: Colors.blueAccent,
+                          //   shape: RoundedRectangleBorder(
+                          //     borderRadius: BorderRadius.circular(8),
+                          //   ),
+                          // ),
+                          onPressed: _saveCourse,
+                          child: Text(
+                            'Simpan Kursus',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
                       ),
               ],
             ),

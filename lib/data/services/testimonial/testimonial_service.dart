@@ -7,23 +7,19 @@ class TestimonialService {
       FirebaseFirestore.instance.collection('testimonials');
   final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  
   Stream<QuerySnapshot> getTestimonials() {
     return _testimonialCollection.snapshots();
   }
 
   Future<void> addTestimonial(Map<String, dynamic> data) async {
     try {
-      // Upload gambar before & after ke Firebase Storage
-      String beforeUrl = await _uploadImage(File(data['before']), 'before');
-      String afterUrl = await _uploadImage(File(data['after']), 'after');
+      // Upload 1 gambar ke Firebase Storage
+      String imageUrl = await _uploadImage(File(data['image']), 'testimonial');
 
-      // Simpan testimonial ke Firestore
       await _testimonialCollection.add({
         'name': data['name'],
         'description': data['description'],
-        'before': beforeUrl,
-        'after': afterUrl,
+        'image': imageUrl,
         'created_at': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -32,18 +28,18 @@ class TestimonialService {
   }
 
   Future<void> deleteTestimonial(String docId) async {
-    try {
-      DocumentSnapshot doc = await _testimonialCollection.doc(docId).get();
-      if (doc.exists) {
-        var data = doc.data() as Map<String, dynamic>;
-        await _deleteImage(data['before']);
-        await _deleteImage(data['after']);
-        await _testimonialCollection.doc(docId).delete();
-      }
-    } catch (e) {
-      print("Error deleting testimonial: $e");
+  try {
+    DocumentSnapshot doc = await _testimonialCollection.doc(docId).get();
+    if (doc.exists) {
+      var data = doc.data() as Map<String, dynamic>;
+      await _deleteImage(data['image']);
+      await _testimonialCollection.doc(docId).delete();
     }
+  } catch (e) {
+    print("Error deleting testimonial: $e");
   }
+}
+
 
   Future<String> _uploadImage(File file, String type) async {
     try {

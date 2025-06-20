@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
 import '../../../../data/services/testimonial/testimonial_service.dart';
 
 class AddTestimonialScreen extends StatefulWidget {
@@ -14,20 +13,15 @@ class AddTestimonialScreen extends StatefulWidget {
 class _AddTestimonialScreenState extends State<AddTestimonialScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  File? _beforeImage;
-  File? _afterImage;
+  File? _image;
   final TestimonialService _testimonialService = TestimonialService();
 
-  Future<void> _pickImage(bool isBefore) async {
+  Future<void> _pickImage() async {
     final pickedFile =
         await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       setState(() {
-        if (isBefore) {
-          _beforeImage = File(pickedFile.path);
-        } else {
-          _afterImage = File(pickedFile.path);
-        }
+        _image = File(pickedFile.path);
       });
     }
   }
@@ -35,60 +29,54 @@ class _AddTestimonialScreenState extends State<AddTestimonialScreen> {
   void _showLoadingDialog() {
     showDialog(
       context: context,
-      barrierDismissible: false, // Tidak bisa ditutup dengan klik luar
-      builder: (context) {
-        return Dialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                CircularProgressIndicator(color: Colors.pinkAccent),
-                SizedBox(height: 20),
-                Text(
-                  "Menyimpan testimonial...",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              CircularProgressIndicator(color: Colors.pinkAccent),
+              SizedBox(height: 20),
+              Text(
+                "Menyimpan testimonial...",
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
   Future<void> _addTestimonial() async {
     if (_nameController.text.isEmpty ||
         _descriptionController.text.isEmpty ||
-        _beforeImage == null ||
-        _afterImage == null) {
+        _image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Semua field harus diisi')),
       );
       return;
     }
 
-    // Tampilkan dialog loading
     _showLoadingDialog();
 
     try {
       await _testimonialService.addTestimonial({
         'name': _nameController.text,
         'description': _descriptionController.text,
-        'before': _beforeImage!.path,
-        'after': _afterImage!.path,
+        'image': _image!.path,
       });
 
-      Navigator.pop(context); // Tutup dialog loading
-      Navigator.pop(context); // Kembali ke halaman sebelumnya
+      Navigator.pop(context); // Close loading dialog
+      Navigator.pop(context); // Back to previous screen
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Testimonial berhasil ditambahkan')),
       );
     } catch (e) {
-      Navigator.pop(context); // Tutup dialog loading jika gagal
+      Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Gagal menambahkan testimonial: $e')),
       );
@@ -99,8 +87,9 @@ class _AddTestimonialScreenState extends State<AddTestimonialScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-          title: const Text("Tambah Testimonial"),
-          backgroundColor: Colors.pinkAccent),
+        title: const Text("Tambah Testimonial"),
+        backgroundColor: Colors.pinkAccent,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -117,40 +106,22 @@ class _AddTestimonialScreenState extends State<AddTestimonialScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              Column(
                 children: [
-                  Column(
-                    children: [
-                      _beforeImage == null
-                          ? const Icon(Icons.image,
-                              size: 80, color: Colors.grey)
-                          : Image.file(_beforeImage!, width: 100, height: 100),
-                      ElevatedButton(
-                        onPressed: () => _pickImage(true),
-                        child: const Text("Pilih Before"),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    children: [
-                      _afterImage == null
-                          ? const Icon(Icons.image,
-                              size: 80, color: Colors.grey)
-                          : Image.file(_afterImage!, width: 100, height: 100),
-                      ElevatedButton(
-                        onPressed: () => _pickImage(false),
-                        child: const Text("Pilih After"),
-                      ),
-                    ],
+                  _image == null
+                      ? const Icon(Icons.image, size: 100, color: Colors.grey)
+                      : Image.file(_image!, width: 150, height: 150),
+                  ElevatedButton(
+                    onPressed: _pickImage,
+                    child: const Text("Pilih Gambar"),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _addTestimonial,
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.pinkAccent),
+                style:
+                    ElevatedButton.styleFrom(backgroundColor: Colors.pinkAccent),
                 child: const Text("Tambahkan Testimonial",
                     style: TextStyle(color: Colors.white)),
               ),

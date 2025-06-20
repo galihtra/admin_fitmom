@@ -2,7 +2,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'add/add_testimonial_screen.dart';
-import 'widget/image_frame_widget.dart';
 import 'widget/like_button_widget.dart';
 
 class TestimonialScreen extends StatefulWidget {
@@ -58,7 +57,7 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
               Expanded(
                 child: CarouselSlider.builder(
                   options: CarouselOptions(
-                    height: screenHeight * 0.55,
+                    height: screenHeight * 0.65,
                     enlargeCenterPage: true,
                     autoPlay: true,
                     autoPlayInterval: const Duration(seconds: 4),
@@ -68,6 +67,9 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                   itemBuilder: (context, index, realIndex) {
                     var testimonial = testimonials[index];
                     var data = testimonial.data() as Map<String, dynamic>;
+
+                    // Use single 'image' field
+                    final imageUrl = data['image'] ?? '';
 
                     return SingleChildScrollView(
                       child: Column(
@@ -84,8 +86,10 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                                 mainAxisSize: MainAxisSize.min,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
+                                  // Like and Delete buttons
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceBetween,
                                     children: [
                                       Row(
                                         children: [
@@ -100,36 +104,61 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                                           ),
                                         ],
                                       ),
-                                      // Tombol Hapus Testimonial
                                       IconButton(
-                                        icon: const Icon(Icons.delete, color: Colors.red),
-                                        onPressed: () => _deleteTestimonial(testimonial.id),
+                                        icon: const Icon(Icons.delete,
+                                            color: Colors.red),
+                                        onPressed: () =>
+                                            _deleteTestimonial(testimonial.id),
                                       ),
                                     ],
                                   ),
                                   const SizedBox(height: 15),
 
-                                  // Gambar Before & After
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Flexible(
-                                        child: ImageFrame(
-                                          imagePath: data['before'] ?? '',
-                                          screenWidth: screenWidth,
+                                  // Image display
+                                  if (imageUrl.isNotEmpty)
+                                    Container(
+                                      width: screenWidth * 0.7,
+                                      height: screenHeight * 0.3,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.network(
+                                          imageUrl,
+                                          fit: BoxFit.cover,
+                                          loadingBuilder: (context, child,
+                                              loadingProgress) {
+                                            if (loadingProgress == null)
+                                              return child;
+                                            return Center(
+                                              child: CircularProgressIndicator(
+                                                value: loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                            .cumulativeBytesLoaded /
+                                                        loadingProgress
+                                                            .expectedTotalBytes!
+                                                    : null,
+                                              ),
+                                            );
+                                          },
+                                          errorBuilder:
+                                              (context, error, stackTrace) {
+                                            return Container(
+                                              color: Colors.grey[200],
+                                              child: const Icon(
+                                                  Icons.broken_image,
+                                                  size: 50),
+                                            );
+                                          },
                                         ),
                                       ),
-                                      const Icon(Icons.arrow_forward,
-                                          color: Colors.pink, size: 30),
-                                      Flexible(
-                                        child: ImageFrame(
-                                          imagePath: data['after'] ?? '',
-                                          screenWidth: screenWidth,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                    ),
                                   const SizedBox(height: 20),
+
+                                  // User Name
                                   Text(
                                     data['name'] ?? '',
                                     overflow: TextOverflow.ellipsis,
@@ -140,19 +169,25 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
                                       color: Colors.pinkAccent,
                                     ),
                                   ),
-                                  ConstrainedBox(
+                                  const SizedBox(height: 10),
+
+                                  // Description
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8),
                                     constraints: BoxConstraints(
                                       maxHeight: screenHeight * 0.15,
-                                      maxWidth: screenWidth * 0.8, // Batasi lebar agar sama rata
+                                      maxWidth: screenWidth * 0.8,
                                     ),
                                     child: SingleChildScrollView(
                                       child: Text(
-                                        data['description'] ?? 'Tidak ada deskripsi.',
-                                        maxLines: 20,
-                                        overflow: TextOverflow.ellipsis,
+                                        data['description'] ??
+                                            'Tidak ada deskripsi.',
                                         textAlign: TextAlign.center,
                                         style: const TextStyle(
-                                            fontSize: 14, color: Colors.black87),
+                                          fontSize: 14,
+                                          color: Colors.black87,
+                                        ),
                                       ),
                                     ),
                                   ),
@@ -172,13 +207,15 @@ class _TestimonialScreenState extends State<TestimonialScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: Colors.pinkAccent,
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(builder: (context) => const AddTestimonialScreen()),
+            MaterialPageRoute(
+                builder: (context) => const AddTestimonialScreen()),
           );
         },
-        child: const Icon(Icons.add),
+        child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }

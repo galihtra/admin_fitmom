@@ -1,4 +1,5 @@
 import 'package:admin_fitmom/presentation/screen/reminder/reminder_screen.dart';
+import 'package:admin_fitmom/presentation/screen/whatssapp/whatsapp_admin_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
@@ -49,6 +50,18 @@ class FloatingButtonSound extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (context) => const ReminderScreen(),
+              ),
+            );
+          },
+        ),
+        SpeedDialChild(
+          child: const Icon(Icons.call),
+          label: "Tambah Nomor WA",
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const WhatsappAdminScreen(),
               ),
             );
           },

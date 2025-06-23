@@ -9,6 +9,7 @@ class MyStrings {
   static const String beritaDanTips = "Berita & Tips";
   static const String buatBeritaDanTips = "Buat Berita & Tips";
   static const String buatCategory = "Buat Kategori";
+  static const String tambahWa = "Tambah Nomor WA";
 
   static const String testimoni = "Testimoni";
 

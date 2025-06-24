@@ -21,6 +21,16 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
   final _videoUrlController = TextEditingController();
   final LessonService _lessonService = LessonService();
 
+  final _affirmationController = TextEditingController();
+  bool _useAffirmation = false;
+
+  @override
+  void dispose() {
+    // ... existing dispose calls ...
+    _affirmationController.dispose();
+    super.dispose();
+  }
+
   File? _image;
   bool _isUploading = false;
 
@@ -55,7 +65,7 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
       }
 
       final lesson = Lesson(
-        id: '', // Akan diisi otomatis di service
+        id: '',
         idCourse: widget.courseId,
         name: _nameController.text,
         description: _descriptionController.text,
@@ -64,12 +74,13 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
         isCompleted: false,
         commentar: '',
         ulasanPengguna: '',
-        rating: 0.0, 
+        rating: 0.0,
         index: 0,
+        useAffirmation: _useAffirmation,
+        affirmationMessage: _affirmationController.text,
       );
 
-      await _lessonService.addLesson(
-          widget.courseId, lesson); // Perbaikan pemanggilan
+      await _lessonService.addLesson(widget.courseId, lesson);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Lesson added successfully!')),
@@ -131,6 +142,25 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
                   validator: (value) =>
                       value!.isEmpty ? 'Enter video URL' : null,
                 ),
+                SizedBox(height: 15),
+                SwitchListTile(
+                  title: const Text('Use Affirmation Message'),
+                  value: _useAffirmation,
+                  onChanged: (value) {
+                    setState(() {
+                      _useAffirmation = value;
+                    });
+                  },
+                ),
+                if (_useAffirmation)
+                  TextFormField(
+                    controller: _affirmationController,
+                    decoration: const InputDecoration(
+                      labelText: 'Affirmation Message',
+                      hintText: 'Enter motivational message for this lesson',
+                    ),
+                    maxLines: 3,
+                  ),
                 SizedBox(height: 20),
                 _isUploading
                     ? CircularProgressIndicator()

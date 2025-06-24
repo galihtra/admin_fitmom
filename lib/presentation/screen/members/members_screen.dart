@@ -109,8 +109,9 @@ class _MembersScreenState extends State<MembersScreen> {
                           leading: CircleAvatar(
                             backgroundColor: MyColor.secondaryColor,
                             child: Text(
-                              userData['name'] != null
-                                  ? userData['name'][0].toUpperCase()
+                              (userData['name'] != null &&
+                                      userData['name'].toString().isNotEmpty)
+                                  ? userData['name'].toString()[0].toUpperCase()
                                   : '?',
                               style: const TextStyle(color: Colors.white),
                             ),

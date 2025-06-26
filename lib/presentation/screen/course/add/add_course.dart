@@ -56,6 +56,7 @@ class _AddCourseScreenState extends State<AddCourseScreen> {
       image: imageUrl ?? '',
       isAvailable: true,
       isFinished: false,
+      isFree: _isFreeCourse,
       members:
           _isFreeCourse ? [] : ['initialMember'], // Kosong untuk course gratis
     );

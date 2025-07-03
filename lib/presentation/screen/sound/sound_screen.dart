@@ -54,15 +54,50 @@ class _SoundScreenState extends State<SoundScreen> {
     );
 
     if (result != null) {
-      String fileName = result.files.single.name;
       String? filePath = result.files.single.path;
 
       if (filePath != null) {
+        TextEditingController _nameController = TextEditingController();
+
+        // Minta user masukkan nama sound
+        String? customName = await showDialog<String>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text("Masukkan Nama Sound"),
+              content: TextField(
+                controller: _nameController,
+                autofocus: true,
+                decoration:
+                    InputDecoration(hintText: "Contoh: Suara Relaksasi"),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text("Batal"),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (_nameController.text.trim().isNotEmpty) {
+                      Navigator.pop(context, _nameController.text.trim());
+                    }
+                  },
+                  child: Text("Simpan"),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (customName == null || customName.isEmpty) return;
+
+        // Upload file ke Firebase Storage
+        String storageFileName =
+            "${DateTime.now().millisecondsSinceEpoch}_${result.files.single.name}";
         Reference storageRef =
-            FirebaseStorage.instance.ref().child('sounds/$fileName');
+            FirebaseStorage.instance.ref().child('sounds/$storageFileName');
         UploadTask uploadTask = storageRef.putFile(File(filePath));
 
-        // Tampilkan dialog loading
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -86,29 +121,25 @@ class _SoundScreenState extends State<SoundScreen> {
           },
         );
 
-        // Tunggu proses upload selesai
         await uploadTask.whenComplete(() => null);
         String downloadUrl = await storageRef.getDownloadURL();
 
-        // Simpan ke Firestore
+        // Simpan metadata ke Firestore
         await _soundCollection.add({
-          'name': fileName,
+          'name': customName,
           'url': downloadUrl,
         });
 
-        // Tutup dialog loading setelah upload selesai
         if (mounted) {
-          Navigator.pop(context);
+          Navigator.pop(context); // close loading
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text("Sound berhasil ditambahkan!"),
               backgroundColor: Colors.green,
             ),
           );
+          setState(() {});
         }
-
-        // Perbarui UI
-        setState(() {});
       }
     }
   }

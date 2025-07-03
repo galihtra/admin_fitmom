@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../model/lesson/lesson.dart';
+import '../../model/lesson/lesson_folder.dart';
 
 class LessonService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -143,5 +144,26 @@ class LessonService {
     } catch (e) {
       throw Exception("Failed to submit review: $e");
     }
+  }
+
+  Future<void> addFolder(String courseId, String folderName) async {
+    final folderRef = _firestore
+        .collection('courses')
+        .doc(courseId)
+        .collection('folders')
+        .doc(); // auto ID
+
+    await folderRef.set({'name': folderName});
+  }
+
+  Stream<List<LessonFolder>> getFolders(String courseId) {
+    return _firestore
+        .collection('courses')
+        .doc(courseId)
+        .collection('folders')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => LessonFolder.fromMap(doc.data(), doc.id))
+            .toList());
   }
 }

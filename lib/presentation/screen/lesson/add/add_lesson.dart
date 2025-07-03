@@ -7,8 +7,12 @@ import '../../../../data/services/lesson/lesson_service.dart';
 
 class AddLessonScreen extends StatefulWidget {
   final String courseId;
+   final String? folderName; 
 
-  AddLessonScreen({required this.courseId});
+  AddLessonScreen({
+    required this.courseId,
+    this.folderName, // Tambahkan ini
+  });
 
   @override
   _AddLessonScreenState createState() => _AddLessonScreenState();
@@ -78,6 +82,7 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
         index: 0,
         useAffirmation: _useAffirmation,
         affirmationMessage: _affirmationController.text,
+        folderName: widget.folderName ?? '', 
       );
 
       await _lessonService.addLesson(widget.courseId, lesson);

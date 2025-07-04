@@ -28,6 +28,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
   final LessonService _lessonService = LessonService();
   final String userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   List<Lesson> lessons = [];
+  List<LessonFolder> folders = [];
 
   void _deleteCourse(BuildContext context) async {
     bool confirmDelete = await _showDeleteConfirmation(context);
@@ -228,6 +229,7 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                     ],
                   ),
                   SizedBox(height: 10),
+                  // Ganti StreamBuilder folder dengan ini:
                   StreamBuilder<List<LessonFolder>>(
                     stream: _lessonService.getFolders(widget.course.id).map(
                           (folders) => folders
@@ -236,56 +238,98 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                         ),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return SizedBox();
-                      final folders = snapshot.data!;
-                      return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
+                      folders = snapshot.data!;
+                      folders.sort(
+                          (a, b) => (a.index ?? 0).compareTo(b.index ?? 0));
+
+                      return ReorderableListView(
+                        shrinkWrap: true,
+                        physics: NeverScrollableScrollPhysics(),
+                        padding: EdgeInsets.zero,
+                        onReorder: (oldIndex, newIndex) async {
+                          setState(() {
+                            if (newIndex > oldIndex) newIndex -= 1;
+                            final movedFolder = folders.removeAt(oldIndex);
+                            folders.insert(newIndex, movedFolder);
+                          });
+
+                          final batch = FirebaseFirestore.instance.batch();
+                          for (int i = 0; i < folders.length; i++) {
+                            final docRef = FirebaseFirestore.instance
+                                .collection('courses')
+                                .doc(widget.course.id)
+                                .collection('folders')
+                                .doc(folders[i].id);
+                            batch.update(docRef, {'index': i});
+                          }
+                          await batch.commit();
+                        },
                         children: folders.map((folder) {
-                          return GestureDetector(
-                            onTap: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => FolderDetailScreen(
-                                    courseId: widget.course.id,
-                                    folder: folder,
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Container(
-                              width: MediaQuery.of(context).size.width * 0.42,
-                              padding: EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(12),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.05),
-                                    blurRadius: 10,
-                                    offset: Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.folder,
-                                    size: 40,
-                                    color: Colors.amber[700],
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    folder.name,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
+                          return ListTile(
+                            key: ValueKey(folder.id),
+                            contentPadding: EdgeInsets.zero,
+                            title: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => FolderDetailScreen(
+                                      courseId: widget.course.id,
+                                      folder: folder,
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
                                   ),
-                                ],
+                                );
+                              },
+                              child: Container(
+                                width: MediaQuery.of(context).size.width * 0.42,
+                                padding: EdgeInsets.all(16),
+                                margin: EdgeInsets.symmetric(
+                                    vertical: 8, horizontal: 6),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Icon(
+                                          Icons.folder,
+                                          size: 40,
+                                          color: Colors.amber[700],
+                                        ),
+                                        SizedBox(height: 8),
+                                        Text(
+                                          folder.name,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ],
+                                    ),
+                                    Positioned(
+                                      right: 0,
+                                      top: 0,
+                                      child: Icon(
+                                        Icons.drag_handle,
+                                        color: Colors.grey[400],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           );

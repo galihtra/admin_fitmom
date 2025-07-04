@@ -229,7 +229,11 @@ class _CourseDetailScreenState extends State<CourseDetailScreen> {
                   ),
                   SizedBox(height: 10),
                   StreamBuilder<List<LessonFolder>>(
-                    stream: _lessonService.getFolders(widget.course.id),
+                    stream: _lessonService.getFolders(widget.course.id).map(
+                          (folders) => folders
+                              .where((f) => f.parentFolderName == null)
+                              .toList(),
+                        ),
                     builder: (context, snapshot) {
                       if (!snapshot.hasData) return SizedBox();
                       final folders = snapshot.data!;

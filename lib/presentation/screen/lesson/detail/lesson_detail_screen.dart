@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Tambahkan
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../../../data/model/lesson/lesson.dart';
 
 class LessonDetailScreen extends StatefulWidget {
@@ -13,14 +14,16 @@ class LessonDetailScreen extends StatefulWidget {
 }
 
 class _LessonDetailScreenState extends State<LessonDetailScreen> {
-  YoutubePlayerController? _youtubeController; // Nullable
+  YoutubePlayerController? _youtubeController;
   List<Map<String, dynamic>> _reviews = [];
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void initState() {
     super.initState();
     _initializeYoutubePlayer();
-    _fetchReviews(); // Fetch ulasan dari Firestore
+    _fetchReviews();
   }
 
   void _initializeYoutubePlayer() {
@@ -42,47 +45,69 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
   }
 
   Future<void> _fetchReviews() async {
-  try {
-    QuerySnapshot reviewSnapshot = await FirebaseFirestore.instance
-        .collection('courses')
-        .doc(widget.lesson.idCourse)
-        .collection('lessons')
-        .doc(widget.lesson.id)
-        .collection('lesson_reviews')
-        .get();
-
-    List<Map<String, dynamic>> reviews = [];
-
-    for (var doc in reviewSnapshot.docs) {
-      var data = doc.data() as Map<String, dynamic>;
-      String userId = data['userId'] ?? "unknown_user";
-
-      // Fetch nama user berdasarkan userId
-      DocumentSnapshot userDoc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
+    try {
+      QuerySnapshot reviewSnapshot = await _firestore
+          .collection('courses')
+          .doc(widget.lesson.idCourse)
+          .collection('lessons')
+          .doc(widget.lesson.id)
+          .collection('lesson_reviews')
           .get();
 
-      String userName = userDoc.exists ? userDoc['name'] ?? "Anonymous" : "Anonymous";
+      List<Map<String, dynamic>> reviews = [];
+      final currentUser = _auth.currentUser;
 
-      reviews.add({
-        'user': userName, // Nama user, bukan userId
-        'comment': data['comment'] ?? "No comment",
+      for (var doc in reviewSnapshot.docs) {
+        var data = doc.data() as Map<String, dynamic>;
+        String userId = data['userId'] ?? "unknown_user";
+
+        DocumentSnapshot userDoc =
+            await _firestore.collection('users').doc(userId).get();
+
+        String userName =
+            userDoc.exists ? userDoc['name'] ?? "Anonymous" : "Anonymous";
+
+        reviews.add({
+          'id': doc.id, // Add document ID for deletion
+          'user': userName,
+          'comment': data['comment'] ?? "No comment",
+          'userId': userId,
+          'isCurrentUser': currentUser?.uid == userId,
+        });
+      }
+
+      setState(() {
+        _reviews = reviews;
       });
+    } catch (e) {
+      print("Error fetching reviews: $e");
     }
-
-    setState(() {
-      _reviews = reviews;
-    });
-  } catch (e) {
-    print("❌ Error fetching reviews or user data: $e");
   }
-}
 
+  Future<void> _deleteReview(String reviewId) async {
+    try {
+      await _firestore
+          .collection('courses')
+          .doc(widget.lesson.idCourse)
+          .collection('lessons')
+          .doc(widget.lesson.id)
+          .collection('lesson_reviews')
+          .doc(reviewId)
+          .delete();
+
+      // Refresh the reviews list
+      await _fetchReviews();
+    } catch (e) {
+      print("Error deleting review: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete comment: $e")),
+      );
+    }
+  }
 
   @override
   void dispose() {
-    _youtubeController?.dispose(); // Cleanup
+    _youtubeController?.dispose();
     super.dispose();
   }
 
@@ -94,7 +119,7 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Youtube Player atau Gambar Placeholder
+            // Video or Image Section
             widget.lesson.urlVideo.isNotEmpty && _youtubeController != null
                 ? Container(
                     width: double.infinity,
@@ -135,33 +160,88 @@ class _LessonDetailScreenState extends State<LessonDetailScreen> {
                           TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 10),
 
-                  // Ulasan ListView
+                  // Comments List with Delete Option
                   Container(
-                    height: 200, // Batas tinggi list agar tidak error
-                    child: ListView.builder(
-                      itemCount: _reviews.length,
-                      itemBuilder: (context, index) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 8.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _reviews[index]['user'],
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontStyle: FontStyle.italic,
-                                  color: Colors.pinkAccent,
+                    constraints:
+                        const BoxConstraints(minHeight: 50, maxHeight: 250),
+                    child: _reviews.isEmpty
+                        ? const Text("Belum ada komentar.")
+                        : ListView.builder(
+                            itemCount: _reviews.length,
+                            itemBuilder: (context, index) {
+                              final review = _reviews[index];
+
+                              return Dismissible(
+                                key: Key(review['id']),
+                                direction: DismissDirection.endToStart,
+                                confirmDismiss: (direction) async {
+                                  return await showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: const Text("Hapus Komentar"),
+                                      content: const Text(
+                                          "Yakin ingin menghapus komentar ini?"),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(false),
+                                          child: const Text("Batal"),
+                                        ),
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.of(context).pop(true),
+                                          child: const Text("Hapus",
+                                              style:
+                                                  TextStyle(color: Colors.red)),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                onDismissed: (_) async {
+                                  await _deleteReview(review['id']);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content:
+                                            Text("Komentar berhasil dihapus")),
+                                  );
+                                },
+                                background: Container(
+                                  color: Colors.red,
+                                  alignment: Alignment.centerRight,
+                                  padding: const EdgeInsets.only(right: 20),
+                                  child: const Icon(Icons.delete,
+                                      color: Colors.white),
                                 ),
-                              ),
-                              Text(_reviews[index]['comment']),
-                              const Divider(color: Colors.pinkAccent),
-                            ],
+                                child: Card(
+                                  margin:
+                                      const EdgeInsets.symmetric(vertical: 6),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          review['user'],
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontStyle: FontStyle.italic,
+                                            color: Colors.pinkAccent,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 5),
+                                        Text(review['comment']),
+                                        const Divider(color: Colors.pinkAccent),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
                           ),
-                        );
-                      },
-                    ),
                   ),
+
                   const SizedBox(height: 20),
                 ],
               ),

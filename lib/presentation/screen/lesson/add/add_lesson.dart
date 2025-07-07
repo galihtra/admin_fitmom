@@ -7,7 +7,7 @@ import '../../../../data/services/lesson/lesson_service.dart';
 
 class AddLessonScreen extends StatefulWidget {
   final String courseId;
-   final String? folderName; 
+  final String? folderName;
 
   AddLessonScreen({
     required this.courseId,
@@ -27,6 +27,7 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
 
   final _affirmationController = TextEditingController();
   bool _useAffirmation = false;
+  bool _soundEnabled = true;
 
   @override
   void dispose() {
@@ -82,7 +83,8 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
         index: 0,
         useAffirmation: _useAffirmation,
         affirmationMessage: _affirmationController.text,
-        folderName: widget.folderName ?? '', 
+        folderName: widget.folderName ?? '',
+        soundEnabled: _soundEnabled,  
       );
 
       await _lessonService.addLesson(widget.courseId, lesson);
@@ -166,6 +168,16 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
                     ),
                     maxLines: 3,
                   ),
+                SizedBox(height: 20),
+                SwitchListTile(
+                  title: Text('Aktifkan Sound'),
+                  value: _soundEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _soundEnabled = value;
+                    });
+                  },
+                ),
                 SizedBox(height: 20),
                 _isUploading
                     ? CircularProgressIndicator()

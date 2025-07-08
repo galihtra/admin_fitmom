@@ -84,7 +84,7 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
         useAffirmation: _useAffirmation,
         affirmationMessage: _affirmationController.text,
         folderName: widget.folderName ?? '',
-        soundEnabled: _soundEnabled,  
+        soundEnabled: _soundEnabled,
       );
 
       await _lessonService.addLesson(widget.courseId, lesson);
@@ -122,11 +122,18 @@ class _AddLessonScreenState extends State<AddLessonScreen> {
                   validator: (value) =>
                       value!.isEmpty ? 'Enter lesson name' : null,
                 ),
+                SizedBox(height: 15),
                 TextFormField(
                   controller: _descriptionController,
-                  decoration: InputDecoration(labelText: 'Description'),
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    alignLabelWithHint: true,
+                    border: OutlineInputBorder(),
+                  ),
                   validator: (value) =>
                       value!.isEmpty ? 'Enter description' : null,
+                  maxLines: 6, // ✅ buat jadi tinggi
+                  minLines: 5,
                 ),
                 SizedBox(height: 15),
                 GestureDetector(

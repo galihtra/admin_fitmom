@@ -1,3 +1,4 @@
+import 'package:admin_fitmom/presentation/screen/course/widget/floating_button_course_custom.dart';
 import 'package:flutter/material.dart';
 import 'package:admin_fitmom/data/model/course/course.dart';
 import 'package:admin_fitmom/data/services/course/course_service.dart';
@@ -11,47 +12,38 @@ class CourseListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<List<Course>>(
-        stream: _courseService.getCourses(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(
-                child: Text('Error loading courses',
-                    style: TextStyle(color: Colors.red)));
-          }
-          if (!snapshot.hasData) {
-            return Center(child: CircularProgressIndicator());
-          }
+        body: StreamBuilder<List<Course>>(
+          stream: _courseService.getCourses(),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(
+                  child: Text('Error loading courses',
+                      style: TextStyle(color: Colors.red)));
+            }
+            if (!snapshot.hasData) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          final courses = snapshot.data!;
-          final freeCourses = courses.where((c) => c.isFree).toList();
-          final premiumCourses = courses.where((c) => !c.isFree).toList();
+            final courses = snapshot.data!;
+            final freeCourses = courses.where((c) => c.isFree).toList();
+            final premiumCourses = courses.where((c) => !c.isFree).toList();
 
-          return CustomScrollView(
-            slivers: [
-              // Premium Courses Section
-              _buildCourseSection(
-                  context, 'Premium Programs', premiumCourses, true),
+            return CustomScrollView(
+              slivers: [
+                // Premium Courses Section
+                _buildCourseSection(
+                    context, 'Premium Programs', premiumCourses, true),
 
-              // Free Courses Section
-              _buildCourseSection(context, 'Free Programs', freeCourses, false),
+                // Free Courses Section
+                _buildCourseSection(
+                    context, 'Free Programs', freeCourses, false),
 
-              const SliverToBoxAdapter(child: SizedBox(height: 80)),
-            ],
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: MyColor.primaryColor,
-        child: const Icon(Icons.add, color: Colors.white),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => AddCourseScreen()),
-          );
-        },
-      ),
-    );
+                const SliverToBoxAdapter(child: SizedBox(height: 80)),
+              ],
+            );
+          },
+        ),
+        floatingActionButton: const FloatingButtonSound());
   }
 
   Widget _buildCourseSection(BuildContext context, String title,

@@ -144,14 +144,113 @@ class _SoundScreenState extends State<SoundScreen> {
     }
   }
 
-  /// Fungsi menghapus sound dari Firestore dan Storage
-  Future<void> _deleteSound(String docId, String soundUrl) async {
-    try {
-      await FirebaseFirestore.instance.collection('sounds').doc(docId).delete();
-      await FirebaseStorage.instance.refFromURL(soundUrl).delete();
-    } catch (e) {
-      print("Error deleting sound: $e");
+  /// Fungsi untuk mengedit nama sound
+  Future<void> _editSoundName(String docId, String currentName) async {
+    TextEditingController _nameController =
+        TextEditingController(text: currentName);
+
+    String? newName = await showDialog<String>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text("Edit Nama Sound"),
+          content: TextField(
+            controller: _nameController,
+            autofocus: true,
+            decoration: InputDecoration(hintText: "Masukkan nama baru"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text("Batal"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (_nameController.text.trim().isNotEmpty) {
+                  Navigator.pop(context, _nameController.text.trim());
+                }
+              },
+              child: Text("Simpan"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (newName != null && newName.isNotEmpty && newName != currentName) {
+      try {
+        await _soundCollection.doc(docId).update({'name': newName});
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Nama sound berhasil diubah!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Gagal mengubah nama: $e"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
+  }
+
+  /// Fungsi menghapus sound dari Firestore dan Storage
+  Future<bool> _deleteSound(String docId, String soundUrl) async {
+    bool confirmDelete = await showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Hapus Sound'),
+            content: const Text('Apakah Anda yakin ingin menghapus sound ini?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Batal'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (confirmDelete) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('sounds')
+            .doc(docId)
+            .delete();
+        await FirebaseStorage.instance.refFromURL(soundUrl).delete();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Sound berhasil dihapus!"),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        return true;
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Gagal menghapus sound: $e"),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return false;
+      }
+    }
+    return false;
   }
 
   /// Fungsi memainkan atau menghentikan audio dengan loop
@@ -178,7 +277,6 @@ class _SoundScreenState extends State<SoundScreen> {
     }
   }
 
-  /// **Otomatis stop audio ketika screen di-back**
   @override
   void dispose() {
     _audioPlayer.stop();
@@ -186,11 +284,18 @@ class _SoundScreenState extends State<SoundScreen> {
     super.dispose();
   }
 
-  /// **UI Screen**
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Sound List")),
+      appBar: AppBar(
+        title: const Text("Sound List"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _addSound,
+          ),
+        ],
+      ),
       body: StreamBuilder(
         stream: _soundCollection.snapshots(),
         builder: (context, AsyncSnapshot<QuerySnapshot> snapshot) {
@@ -215,8 +320,8 @@ class _SoundScreenState extends State<SoundScreen> {
                   padding: const EdgeInsets.only(right: 20),
                   child: const Icon(Icons.delete, color: Colors.white),
                 ),
-                onDismissed: (direction) {
-                  _deleteSound(sound.id, soundUrl);
+                confirmDismiss: (direction) async {
+                  return await _deleteSound(sound.id, soundUrl);
                 },
                 child: ListTile(
                   title: Text(sound['name']),
@@ -240,48 +345,34 @@ class _SoundScreenState extends State<SoundScreen> {
                           ],
                         )
                       : null,
-                  trailing: IconButton(
-                    icon: Icon(
-                      _currentlyPlaying == soundUrl
-                          ? Icons.pause
-                          : Icons.play_arrow,
-                    ),
-                    onPressed: () => _playSound(soundUrl),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(
+                          _currentlyPlaying == soundUrl
+                              ? Icons.pause
+                              : Icons.play_arrow,
+                        ),
+                        onPressed: () => _playSound(soundUrl),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () =>
+                            _editSoundName(sound.id, sound['name']),
+                      ),
+                    ],
                   ),
+                  onTap: () => _playSound(soundUrl),
                 ),
               );
             },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          showDialog(
-            context: context,
-            builder: (context) {
-              return AlertDialog(
-                title: const Text("Tambahkan Sound"),
-                content: const Text("Pilih file audio untuk ditambahkan"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text("Batal"),
-                  ),
-                  ElevatedButton(
-                    onPressed: _addSound,
-                    child: const Text("Pilih File"),
-                  ),
-                ],
-              );
-            },
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
     );
   }
 
-  /// **Format durasi jadi MM:SS**
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, "0");
     String minutes = twoDigits(duration.inMinutes);

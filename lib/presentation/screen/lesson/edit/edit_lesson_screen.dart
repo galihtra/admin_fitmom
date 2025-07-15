@@ -82,7 +82,7 @@ class _EditLessonScreenState extends State<EditLessonScreen> {
         index: widget.lesson.index,
         useAffirmation: _useAffirmation,
         affirmationMessage: _affirmationController.text,
-        folderName: widget.lesson.folderName, // Pastikan folderName tetap sama
+        folderName: widget.lesson.folderName,
         soundEnabled: _soundEnabled,
       );
 
@@ -96,7 +96,6 @@ class _EditLessonScreenState extends State<EditLessonScreen> {
         const SnackBar(content: Text('Latihan updated successfully!')),
       );
 
-      // Kembali ke screen sebelumnya dengan membawa data updated lesson
       Navigator.pop(context, updatedLesson);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -163,7 +162,18 @@ class _EditLessonScreenState extends State<EditLessonScreen> {
                   validator: (value) =>
                       value!.isEmpty ? 'Enter video URL' : null,
                 ),
-                if (widget.lesson.affirmationMessage.isNotEmpty) ...[
+                const SizedBox(height: 15),
+                SwitchListTile(
+                  title: const Text('Use Affirmation Message'),
+                  value: _useAffirmation,
+                  onChanged: (value) {
+                    setState(() {
+                      _useAffirmation = value;
+                    });
+                  },
+                ),
+                if (_useAffirmation ||
+                    widget.lesson.affirmationMessage.isNotEmpty) ...[
                   const SizedBox(height: 15),
                   TextFormField(
                     controller: _affirmationController,
@@ -174,6 +184,16 @@ class _EditLessonScreenState extends State<EditLessonScreen> {
                     maxLines: 3,
                   ),
                 ],
+                const SizedBox(height: 15),
+                SwitchListTile(
+                  title: const Text('Aktifkan Sound'),
+                  value: _soundEnabled,
+                  onChanged: (value) {
+                    setState(() {
+                      _soundEnabled = value;
+                    });
+                  },
+                ),
                 const SizedBox(height: 20),
                 _isUploading
                     ? const CircularProgressIndicator()

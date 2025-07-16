@@ -608,7 +608,9 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                   final lessons = snapshot.data!
                       .where(
                           (lesson) => lesson.folderName == _currentFolder.name)
-                      .toList();
+                      .toList()
+                    ..sort((a, b) => a.index
+                        .compareTo(b.index)); // ✅ berdasarkan waktu ditambahkan
 
                   if (lessons.isEmpty) {
                     return Expanded(

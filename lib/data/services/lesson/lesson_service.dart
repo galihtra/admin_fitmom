@@ -7,21 +7,24 @@ class LessonService {
 
   /// Tambah lesson ke dalam Firestore dengan ID otomatis
   Future<void> addLesson(String courseId, Lesson lesson) async {
-    try {
-      final docRef = _firestore
-          .collection('courses')
-          .doc(courseId)
-          .collection('lessons')
-          .doc(); // Buat ID otomatis
+  final lessonsSnapshot = await FirebaseFirestore.instance
+      .collection('courses')
+      .doc(courseId)
+      .collection('lessons')
+      .get();
 
-      lesson.id = docRef.id; // Simpan ID ke dalam objek Lesson
+  final nextIndex = lessonsSnapshot.docs.length;
 
-      await docRef
-          .set(lesson.toMap()); // Simpan data lesson dengan ID yang benar
-    } catch (e) {
-      throw Exception("Failed to add lesson: $e");
-    }
-  }
+  await FirebaseFirestore.instance
+      .collection('courses')
+      .doc(courseId)
+      .collection('lessons')
+      .add({
+    ...lesson.toMap(),
+    'index': nextIndex, // ⬅️ tambahkan index otomatis
+  });
+}
+
 
   /// Update lesson berdasarkan ID
   Future<void> updateLesson(

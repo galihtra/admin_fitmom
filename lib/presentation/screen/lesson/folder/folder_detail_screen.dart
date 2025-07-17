@@ -150,42 +150,32 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
 
   Future<void> _editFolder(BuildContext context) async {
     String newFolderName = _currentFolder.name;
-    final oldFolderName =
-        _currentFolder.name; // Store the original name before editing
+    final oldFolderName = _currentFolder.name;
 
     final updatedName = await showDialog<String>(
       context: context,
       builder: (context) {
+        final controller = TextEditingController(text: _currentFolder.name);
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Edit Folder Name',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
+                Text('Edit Folder Name',
+                    style:
+                        TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 SizedBox(height: 16),
                 TextField(
+                  controller: controller,
                   autofocus: true,
                   decoration: InputDecoration(
                     hintText: 'Folder name',
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
+                        borderRadius: BorderRadius.circular(12)),
                   ),
-                  controller: TextEditingController(text: _currentFolder.name),
                   onChanged: (value) => newFolderName = value.trim(),
                 ),
                 SizedBox(height: 24),
@@ -193,27 +183,17 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Cancel'),
-                    ),
-                    SizedBox(width: 8),
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancel')),
                     ElevatedButton(
                       onPressed: () {
                         if (newFolderName.isNotEmpty) {
                           Navigator.pop(context, newFolderName);
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: MyColor.primaryColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 12,
-                        ),
-                      ),
                       child: Text('Save'),
+                      style: ElevatedButton.styleFrom(
+                          backgroundColor: MyColor.primaryColor),
                     ),
                   ],
                 ),
@@ -225,47 +205,46 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
     );
 
     if (updatedName != null &&
-        updatedName.isNotEmpty &&
-        updatedName != _currentFolder.name) {
+        updatedName != oldFolderName &&
+        updatedName.isNotEmpty) {
       try {
-        // First update the folder document itself
-        await _firestore
+        final folderRef = _firestore
             .collection('courses')
             .doc(widget.courseId)
-            .collection('folders')
-            .doc(_currentFolder.id)
-            .update({'name': updatedName});
+            .collection('folders');
 
-        // Then update all lessons that reference this folder by its old name
-        final lessonsQuery = await _firestore
-            .collection('courses')
-            .doc(widget.courseId)
-            .collection('lessons')
-            .where('folderName', isEqualTo: oldFolderName)
-            .get();
+        // 1. Cek duplikat
+        final duplicate =
+            await folderRef.where('name', isEqualTo: updatedName).get();
 
-        // Use batch update for atomic operation
-        final batch = _firestore.batch();
-        for (final doc in lessonsQuery.docs) {
-          batch.update(doc.reference, {'folderName': updatedName});
+        if (duplicate.docs.isNotEmpty) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Folder name already exists.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return;
         }
-        await batch.commit();
 
-        // Also update any subfolders that reference this folder as parent
-        final subfoldersQuery = await _firestore
-            .collection('courses')
-            .doc(widget.courseId)
-            .collection('folders')
-            .where('parent_folder_name', isEqualTo: oldFolderName)
-            .get();
+        // 2. Update nama folder (utama)
+        await folderRef.doc(_currentFolder.id).update({'name': updatedName});
 
-        final subfolderBatch = _firestore.batch();
-        for (final doc in subfoldersQuery.docs) {
-          subfolderBatch
-              .update(doc.reference, {'parent_folder_name': updatedName});
-        }
-        await subfolderBatch.commit();
+        // 3. Update semua lesson yang refer ke folder lama
+        await LessonService().renameFolderNameInLessons(
+          courseId: widget.courseId,
+          oldFolderName: oldFolderName,
+          newFolderName: updatedName,
+        );
 
+        // 4. Update semua subfolder yang refer ke folder lama sebagai parent
+        await LessonService().renameParentFolderInSubfolders(
+          courseId: widget.courseId,
+          oldName: oldFolderName,
+          newName: updatedName,
+        );
+
+        // 5. Update UI
         if (!mounted) return;
         setState(() {
           _currentFolder = LessonFolder(
@@ -277,34 +256,18 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Folder and all associated content updated successfully'),
+            content: Text('Folder renamed successfully.'),
             backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-            duration: Duration(seconds: 2),
           ),
         );
       } catch (e) {
-        if (!mounted) return;
+        print('❌ Error during folder rename: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to rename folder: $e'),
             backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
           ),
         );
-
-        // Revert the folder name in UI if update failed
-        setState(() {
-          _currentFolder = LessonFolder(
-            id: _currentFolder.id,
-            name: oldFolderName,
-            parentFolderName: _currentFolder.parentFolderName,
-          );
-        });
       }
     }
   }
@@ -384,6 +347,31 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
 
     if (folderName != null && folderName.isNotEmpty) {
       try {
+        // Cek apakah folder dengan nama yang sama sudah ada
+        final existingFolders = await _firestore
+            .collection('courses')
+            .doc(widget.courseId)
+            .collection('folders')
+            .where('name', isEqualTo: folderName)
+            .where('parent_folder_name', isEqualTo: _currentFolder.name)
+            .get();
+
+        if (existingFolders.docs.isNotEmpty) {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Folder with this name already exists'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+          return;
+        }
+
+        // Jika nama folder unik, buat folder baru
         final newFolderDoc = await _firestore
             .collection('courses')
             .doc(widget.courseId)
@@ -391,6 +379,7 @@ class _FolderDetailScreenState extends State<FolderDetailScreen> {
             .add({
           'name': folderName,
           'parent_folder_name': _currentFolder.name,
+          'createdAt': FieldValue.serverTimestamp(), // Tambahkan timestamp
         });
 
         if (!mounted) return;

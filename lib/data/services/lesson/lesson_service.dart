@@ -7,24 +7,23 @@ class LessonService {
 
   /// Tambah lesson ke dalam Firestore dengan ID otomatis
   Future<void> addLesson(String courseId, Lesson lesson) async {
-  final lessonsSnapshot = await FirebaseFirestore.instance
-      .collection('courses')
-      .doc(courseId)
-      .collection('lessons')
-      .get();
+    final lessonsSnapshot = await FirebaseFirestore.instance
+        .collection('courses')
+        .doc(courseId)
+        .collection('lessons')
+        .get();
 
-  final nextIndex = lessonsSnapshot.docs.length;
+    final nextIndex = lessonsSnapshot.docs.length;
 
-  await FirebaseFirestore.instance
-      .collection('courses')
-      .doc(courseId)
-      .collection('lessons')
-      .add({
-    ...lesson.toMap(),
-    'index': nextIndex, // ⬅️ tambahkan index otomatis
-  });
-}
-
+    await FirebaseFirestore.instance
+        .collection('courses')
+        .doc(courseId)
+        .collection('lessons')
+        .add({
+      ...lesson.toMap(),
+      'index': nextIndex, // ⬅️ tambahkan index otomatis
+    });
+  }
 
   /// Update lesson berdasarkan ID
   Future<void> updateLesson(
@@ -157,6 +156,86 @@ class LessonService {
         .doc(); // auto ID
 
     await folderRef.set({'name': folderName});
+  }
+
+  Future<void> renameParentFolderInSubfolders({
+    required String courseId,
+    required String oldName,
+    required String newName,
+  }) async {
+    final _firestore = FirebaseFirestore.instance;
+
+    final folders = await _firestore
+        .collection('courses')
+        .doc(courseId)
+        .collection('folders')
+        .where('parent_folder_name', isEqualTo: oldName)
+        .get();
+
+    final batch = _firestore.batch();
+    for (final doc in folders.docs) {
+      batch.update(doc.reference, {'parent_folder_name': newName});
+    }
+
+    await batch.commit();
+  }
+
+  Future<void> renameFolder(
+    String courseId,
+    String folderId,
+    String newFolderName,
+    String oldFolderName,
+  ) async {
+    final _firestore = FirebaseFirestore.instance;
+
+    // 1. Update folder name di koleksi 'folders'
+    final folderRef = _firestore
+        .collection('courses')
+        .doc(courseId)
+        .collection('folders')
+        .doc(folderId);
+
+    await folderRef.update({'name': newFolderName});
+
+    // 2. Update semua lesson yang memakai folder_name lama
+    final lessonRef =
+        _firestore.collection('courses').doc(courseId).collection('lessons');
+
+    final snapshot =
+        await lessonRef.where('folder_name', isEqualTo: oldFolderName).get();
+
+    final batch = _firestore.batch();
+
+    for (final doc in snapshot.docs) {
+      batch.update(doc.reference, {'folder_name': newFolderName});
+    }
+
+    await batch.commit();
+  }
+
+  Future<void> renameFolderNameInLessons({
+    required String courseId,
+    required String oldFolderName,
+    required String newFolderName,
+  }) async {
+    try {
+      final lessonRef =
+          _firestore.collection('courses').doc(courseId).collection('lessons');
+
+      final snapshot =
+          await lessonRef.where('folder_name', isEqualTo: oldFolderName).get();
+
+      final batch = _firestore.batch();
+
+      for (final doc in snapshot.docs) {
+        batch.update(doc.reference, {'folder_name': newFolderName});
+      }
+
+      await batch.commit();
+      print('✅ Berhasil mengganti folder_name pada semua lesson.');
+    } catch (e) {
+      throw Exception("❌ Gagal mengganti folder_name di lessons: $e");
+    }
   }
 
   Stream<List<LessonFolder>> getFolders(String courseId) {
